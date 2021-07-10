@@ -7,7 +7,6 @@ const TetrisPage: FC = () => {
   return (
     <div className="page">
       <Tetris />
-      <Tetris />
     </div>
   );
 };

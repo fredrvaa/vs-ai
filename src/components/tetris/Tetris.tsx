@@ -1,60 +1,112 @@
-import React, { FC, useEffect, useState } from "react";
+import React, { FC, useState } from "react";
 import Cell from "./Cell";
 import { STAGE, TETROMINOS } from "../../configs/tetris";
 import "./tetris.css";
 import useInterval from "../../hooks/useInterval";
-import { ICurrentTetromino, ITetromino } from "../../interfaces/tetris";
+import { ITetromino, TStage, IPlayer, TShape } from "../../interfaces/tetris";
 
 const TETROMINO_KEYS = Object.keys(TETROMINOS);
 
-const generateTetromino = (): ICurrentTetromino => {
-  const tetromino: ITetromino =
+const generatePlayerTetromino = (): IPlayer => {
+  const randomTetromino: ITetromino =
     TETROMINOS[TETROMINO_KEYS[(TETROMINO_KEYS.length * Math.random()) << 0]];
-  return { tetromino: tetromino, row: 0, col: Math.floor(STAGE.WIDTH / 2) - 2 };
+  return {
+    tetromino: randomTetromino,
+    position: {
+      row: 0,
+      col: Math.floor(STAGE.WIDTH / 2) - 2,
+    },
+  };
 };
 
 const Tetris: FC = () => {
-  const [currentTetromino, setCurrentTetromino] = useState<ICurrentTetromino>(
-    generateTetromino()
-  );
+  const [player, setPlayer] = useState<IPlayer>(generatePlayerTetromino());
 
-  const [grid, setGrid] = useState(
+  const [stage, setStage] = useState<TStage>(
     Array.from(Array(STAGE.HEIGHT), () => Array(STAGE.WIDTH).fill(0))
   );
 
-  const [counter, setCounter] = useState<number>(0);
-
   const cellContainsCurrentTetromino = (row: number, col: number): boolean => {
-    let rowDiff = row - currentTetromino.row;
-    let colDiff = col - currentTetromino.col;
+    let rowDiff = row - player.position.row;
+    let colDiff = col - player.position.col;
 
     if (rowDiff >= 0 && rowDiff < 4 && colDiff >= 0 && colDiff < 4) {
-      if (currentTetromino.tetromino.shape[rowDiff][colDiff] !== 0) {
+      if (player.tetromino.shape[rowDiff][colDiff] !== 0) {
         return true;
       }
     }
     return false;
   };
 
-  const update = () => {
-    if (counter > 1) {
-      setCurrentTetromino(generateTetromino());
-      setCounter(0);
-    } else {
-      setCounter(counter + 1);
+  const isPlayerCollision = (player: IPlayer, stage: TStage): boolean => {
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        if (
+          player.tetromino.shape[row][col] !== 0 &&
+          (row + player.position.row === STAGE.HEIGHT ||
+            stage[row + player.position.row][col + player.position.col] !== 0)
+        ) {
+          return true;
+        }
+      }
     }
-
-    setCurrentTetromino({
-      ...currentTetromino,
-      row: currentTetromino.row + 1,
-    });
-
-    // let copyGrid = [...grid];
-
-    // setGrid(copyGrid);
+    return false;
   };
 
-  useEffect(() => {}, []);
+  const rotateShape = (shape: TShape, direction: number): TShape => {
+    let n = shape.length - 1;
+    let newShape = Array.from(Array(4), () => Array(4).fill(0));
+
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        let newRow: number;
+        let newCol: number;
+        if (direction === 1) {
+          newCol = row;
+          newRow = n - col;
+        } else {
+          newCol = n - row;
+          newRow = n - col;
+        }
+
+        newShape[newRow][newCol] = shape[row][col];
+      }
+    }
+    return newShape;
+  };
+
+  const addPlayerTetrominoToStage = (
+    player: IPlayer,
+    stage: TStage
+  ): TStage => {
+    let copyStage = [...stage];
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        if (player.tetromino.shape[row][col] !== 0) {
+          copyStage[row + player.position.row][col + player.position.col] =
+            player.tetromino.shape[row][col];
+        }
+      }
+    }
+    return copyStage;
+  };
+
+  const update = (): void => {
+    const updatedPlayer = {
+      ...player,
+      tetromino: {
+        ...player.tetromino,
+        shape: rotateShape(player.tetromino.shape, 1),
+      },
+      position: { ...player.position, row: player.position.row + 1 },
+    };
+    if (isPlayerCollision(updatedPlayer, stage)) {
+      setStage(addPlayerTetrominoToStage(player, stage));
+      setPlayer(generatePlayerTetromino());
+    } else {
+      setPlayer(updatedPlayer);
+    }
+  };
 
   useInterval(() => {
     update();
@@ -62,16 +114,16 @@ const Tetris: FC = () => {
 
   return (
     <div className="stage">
-      {grid.map((row: (string | number)[], rowId: number) => {
+      {stage.map((row, rowId: number) => {
         return (
           <div key={rowId}>
-            {grid[rowId].map((value: string | number, colId: number) => {
+            {row.map((value: string | number, colId: number) => {
               return (
                 <Cell
                   keyId={colId}
                   value={
                     cellContainsCurrentTetromino(rowId, colId)
-                      ? currentTetromino.tetromino.code
+                      ? player.tetromino.code
                       : value
                   }
                 />

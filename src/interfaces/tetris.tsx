@@ -1,11 +1,18 @@
+export type TShape = (string | number)[][];
+export type TStage = (string | number)[][];
+
 export interface ITetromino {
   code: string;
-  shape: (string | number)[][];
+  shape: TShape;
   color: string;
 }
 
-export interface ICurrentTetromino {
-  tetromino: ITetromino;
+export interface IPosition {
   row: number;
   col: number;
+}
+
+export interface IPlayer {
+  tetromino: ITetromino;
+  position: IPosition;
 }

@@ -1,7 +1,6 @@
-import React, { FC } from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
-import Home from './Home';
-import NavBar from './navbar/NavBar';
+import React, { FC } from "react";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import Home from "./Home";
 
 const App: FC = () => {
   return (
@@ -11,6 +10,6 @@ const App: FC = () => {
       </Switch>
     </Router>
   );
-}
+};
 
 export default App;
